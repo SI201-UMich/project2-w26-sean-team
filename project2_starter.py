@@ -1,7 +1,7 @@
 # SI 201 HW4 (Library Checkout System)
-# Your name:
-# Your student id:
-# Your email:
+# Your name: Sean Manoff
+# Your student id: 95152984
+# Your email: smanoff@umich.edu
 # Who or what you worked with on this homework (including generative AI like ChatGPT):
 # If you worked with generative AI also add a statement for how you used it.
 # e.g.:
@@ -41,7 +41,35 @@ def load_listing_results(html_path) -> list[tuple]:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+    infile = open(html_path, "r")
+    data = infile.read()
+    infile.close()
+    soup = BeautifulSoup(data, "html.parser")
+    all_links = soup.find_all("a")
+    listing_info = []
+    ids = []
+
+    for link in all_links:
+        href = link.get("href")
+        if href != None:
+            if "/rooms/" in href:
+                pieces = href.split("/rooms/")
+                if len(pieces) > 1:
+                    id_piece = pieces[1]
+                    if "?" in id_piece:
+                        listing_id = id_piece.split("?")[0]
+                    else:
+                        listing_id = id_piece
+                
+                    tag = soup.find(id="title_" + listing_id)
+                    if tag != None:
+                        listing_title = tag.get_text().strip()
+                    if listing_title != "" and listing_id not in ids:
+                        listing_info.append((listing_title, listing_id))
+                        ids.append(listing_id)
+    return listing_info
+
+
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -70,7 +98,7 @@ def get_listing_details(listing_id) -> dict:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+    
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -195,7 +223,8 @@ class TestCases(unittest.TestCase):
     def test_load_listing_results(self):
         # TODO: Check that the number of listings extracted is 18.
         # TODO: Check that the FIRST (title, id) tuple is  ("Loft in Mission District", "1944564").
-        pass
+        self.assertEqual(len(self.listings), 18)
+        self.assertEqual(self.listings[0], ("Loft in Mission District", "1944564"))
 
     def test_get_listing_details(self):
         html_list = ["467507", "1550913", "1944564", "4614763", "6092596"]
