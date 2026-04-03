@@ -154,19 +154,18 @@ def get_listing_details(listing_id) -> dict:
                     host_name = host_piece.split()[0].strip()
 
     room_type = "Entire Room"
-    line = ""
     for h2 in h2_tags:
         t = h2.get_text()
-        if "hosted by" in t.lower():
-            line = t
+        if "Private room" in t or "Private Room" in t:
+            room_type = "Private Room"
+        elif "Shared room" in t or "Shared Room" in t:
+            room_type = "Shared Room"
 
-    if line == "":
-        line = text
-
-    if "Private" in line:
-        room_type = "Private Room"
-    elif "Shared" in line:
-        room_type = "Shared Room"
+    if room_type == "Entire Room":
+        if "Private room" in text or "Private Room" in text:
+            room_type = "Private Room"
+        elif "Shared room" in text or "Shared Room" in text:
+            room_type = "Shared Room"
 
     location_rating = 0.0
     matches = re.findall(r'Location</div><div class="_bgq2leu"><div class="_7pay" aria-label="([0-9.]+) out of 5\.0"', data)
@@ -259,7 +258,26 @@ def avg_location_rating_by_room_type(data) -> dict:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+
+    total = {}
+    count = {}
+    for row in data:
+        room = row[5]
+        rating = row[6]
+        if rating == 0.0:
+            continue
+
+        if room not in total:
+            total[room] = 0
+            count[room] = 0
+
+        total[room] = total[room] + rating
+        count[room] = count[room] + 1
+    avgs = {}
+    for room in total:
+        avgs[room] = total[room] / count[room]
+    return avgs
+
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -280,7 +298,25 @@ def validate_policy_numbers(data) -> list[str]:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+    bad_ids = []
+    for row in data:
+        policy_num = row[2]
+        listing_id = row[1]
+
+        if policy_num == "Pending" or policy_num == "Exempt":
+            continue
+        valid = False
+        if policy_num.startswith("STR-"):
+            if re.match(r"^STR-000\d\d\d\d$", policy_num):
+                valid = True
+        else:
+            if re.match(r"^20\d\d-00\d\d\d\dSTR$", policy_num):
+                valid = True    
+        if valid == False:
+            bad_ids.append(listing_id)
+    return bad_ids
+
+
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -363,14 +399,15 @@ class TestCases(unittest.TestCase):
 
     def test_avg_location_rating_by_room_type(self):
         # TODO: Call avg_location_rating_by_room_type() and save the output.
+        avgs = avg_location_rating_by_room_type(self.detailed_data)
         # TODO: Check that the average for "Private Room" is 4.9.
-        pass
+        self.assertEqual(avgs["Private Room"], 4.9)
 
     def test_validate_policy_numbers(self):
         # TODO: Call validate_policy_numbers() on detailed_data and save the result into a variable invalid_listings.
+        bad_ids = validate_policy_numbers(self.detailed_data)
         # TODO: Check that the list contains exactly "16204265" for this dataset.
-        pass
-
+        self.assertEqual(bad_ids, ["16204265"])
 
 def main():
     detailed_data = create_listing_database(os.path.join("html_files", "search_results.html"))
