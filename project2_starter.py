@@ -41,7 +41,7 @@ def load_listing_results(html_path) -> list[tuple]:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    infile = open(html_path, "r")
+    infile = open(html_path, "r", encoding="utf-8-sig")
     data = infile.read()
     infile.close()
     soup = BeautifulSoup(data, "html.parser")
@@ -60,6 +60,8 @@ def load_listing_results(html_path) -> list[tuple]:
                         listing_id = id_piece.split("?")[0]
                     else:
                         listing_id = id_piece
+                    if "/" in listing_id:
+                        listing_id = listing_id.split("/")[-1]
                 
                     tag = soup.find(id="title_" + listing_id)
                     if tag != None:
@@ -98,7 +100,82 @@ def get_listing_details(listing_id) -> dict:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    
+    filename = "html_files/listing_" + listing_id + ".html"
+    infile = open(filename, "r", encoding="utf-8-sig")
+    data = infile.read()
+    infile.close()
+
+    soup = BeautifulSoup(data, "html.parser")
+    text = soup.get_text(" ")
+
+    policy_number = ""
+    li_tags = soup.find_all("li")
+    for li in li_tags:
+        li_text = li.get_text()
+        if "Policy number" in li_text:
+            parts = li_text.split(":")
+            if len(parts) > 1:
+                policy_number = parts[1].strip()
+
+    if policy_number == "":
+        if "Policy number:" in text:
+            pieces = text.split("Policy number:")
+            if len(pieces) > 1:
+                remaining = pieces[1]
+                policy_number = remaining.split()[0]
+
+    if policy_number == "":
+        policy_number = "Exempt"
+    elif "pending" in policy_number.lower():
+        policy_number = "Pending"
+    elif "exempt" in policy_number.lower():
+        policy_number = "Exempt"
+
+    if "Superhost" in text:
+        host_type = "Superhost"
+    else:
+        host_type = "regular"
+
+    host_name = ""
+    h2_tags = soup.find_all("h2")
+    for h2 in h2_tags:
+        t = h2.get_text()
+        if "Hosted by" in t:
+            host_name = t.replace("Hosted by", "").strip()
+
+    if host_name == "":
+        if "Hosted by " in text:
+            pieces = text.split("Hosted by ")
+            if len(pieces) > 1:
+                host_piece = pieces[1]
+                if "Joined" in host_piece:
+                    host_name = host_piece.split("Joined")[0].strip()
+                else:
+                    host_name = host_piece.split()[0].strip()
+
+    room_type = "Entire Room"
+    line = ""
+    for h2 in h2_tags:
+        t = h2.get_text()
+        if "hosted by" in t.lower():
+            line = t
+
+    if line == "":
+        line = text
+
+    if "Private" in line:
+        room_type = "Private Room"
+    elif "Shared" in line:
+        room_type = "Shared Room"
+
+    location_rating = 0.0
+    matches = re.findall(r'Location</div><div class="_bgq2leu"><div class="_7pay" aria-label="([0-9.]+) out of 5\.0"', data)
+    if len(matches) > 0:
+        location_rating = float(matches[0])
+
+    return {listing_id: {"policy_number": policy_number, "host_type": host_type, "host_name": host_name, "room_type": room_type, "location_rating": location_rating}}
+
+
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -119,7 +196,16 @@ def create_listing_database(html_path) -> list[tuple]:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+    listing_results = load_listing_results(html_path)
+    detailed_data = []
+    for listing in listing_results:
+        listing_title = listing[0]
+        listing_id = listing[1]
+        details = get_listing_details(listing_id)
+        l = details[listing_id]
+        row = (listing_title, listing_id, l["policy_number"], l["host_type"], l["host_name"], l["room_type"], l["location_rating"])
+        detailed_data.append(row)
+    return detailed_data
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -142,7 +228,15 @@ def output_csv(data, filename) -> None:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+    outfile = open(filename, "w", newline="")
+    writer = csv.writer(outfile)
+
+    writer.writerow(["Listing Title", "Listing ID", "Policy Number", "Host Type", "Host Name", "Room Type", "Location Rating"])
+
+    ds = sorted(data, key=lambda x: x[6], reverse=True)
+    for row in ds:
+        writer.writerow(row)
+    outfile.close()
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -230,27 +324,41 @@ class TestCases(unittest.TestCase):
         html_list = ["467507", "1550913", "1944564", "4614763", "6092596"]
 
         # TODO: Call get_listing_details() on each listing id above and save results in a list.
+        final = []
+        for listing_id in html_list:
+            final.append(get_listing_details(listing_id))
 
         # TODO: Spot-check a few known values by opening the corresponding listing_<id>.html files.
         # 1) Check that listing 467507 has the correct policy number "STR-0005349".
         # 2) Check that listing 1944564 has the correct host type "Superhost" and room type "Entire Room".
         # 3) Check that listing 1944564 has the correct location rating 4.9.
-        pass
+        self.assertEqual(final[0]["467507"]["policy_number"], "STR-0005349")
+        self.assertEqual(final[2]["1944564"]["host_type"], "Superhost")
+        self.assertEqual(final[2]["1944564"]["room_type"], "Entire Room")
+        self.assertAlmostEqual(final[2]["1944564"]["location_rating"], 4.9)
 
     def test_create_listing_database(self):
         # TODO: Check that each tuple in detailed_data has exactly 7 elements:
         # (listing_title, listing_id, policy_number, host_type, host_name, room_type, location_rating)
-
+        for row in self.detailed_data:
+            self.assertEqual(len(row), 7)
         # TODO: Spot-check the LAST tuple is ("Guest suite in Mission District", "467507", "STR-0005349", "Superhost", "Jennifer", "Entire Room", 4.8).
-        pass
+        self.assertEqual(self.detailed_data[-1], ("Guest suite in Mission District", "467507", "STR-0005349", "Superhost", "Jennifer", "Entire Room", 4.8))
 
     def test_output_csv(self):
         out_path = os.path.join(self.base_dir, "test.csv")
-
         # TODO: Call output_csv() to write the detailed_data to a CSV file.
+        output_csv(self.detailed_data, out_path)
         # TODO: Read the CSV back in and store rows in a list.
-        # TODO: Check that the first data row matches ["Guesthouse in San Francisco", "49591060", "STR-0000253", "Superhost", "Ingrid", "Entire Room", "5.0"].
+        infile = open(out_path, "r")
+        r = csv.reader(infile)
+        rows = []
 
+        for row in r:
+            rows.append(row)
+        infile.close()
+        # TODO: Check that the first data row matches ["Guesthouse in San Francisco", "49591060", "STR-0000253", "Superhost", "Ingrid", "Entire Room", "5.0"].
+        self.assertEqual(rows[1], ["Guesthouse in San Francisco", "49591060", "STR-0000253", "Superhost", "Ingrid", "Entire Room", "5.0"])
         os.remove(out_path)
 
     def test_avg_location_rating_by_room_type(self):
