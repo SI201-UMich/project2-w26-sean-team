@@ -1,13 +1,13 @@
-# SI 201 HW4 (Library Checkout System)
+# SI 201 Project 2
 # Your name: Sean Manoff
 # Your student id: 95152984
 # Your email: smanoff@umich.edu
-# Who or what you worked with on this homework (including generative AI like ChatGPT):
+# Who or what you worked with on this homework (including generative AI like ChatGPT): I used ChatGPT to give me hints and suggestions of potential bugs or errors in my code after implementing my functions. I also used it a lot for debugging when things weren’t working and I couldn’t figure out why. It especially helped with the regex for the location rating, since that part was confusing. I didn’t come up with everything on my own, but I understand the changes I used.
 # If you worked with generative AI also add a statement for how you used it.
 # e.g.:
 # Asked ChatGPT for hints on debugging and for suggestions on overall code structure
 #
-# Did your use of GenAI on this assignment align with your goals and guidelines in your Gen AI contract? If not, why?
+# Did your use of GenAI on this assignment align with your goals and guidelines in your Gen AI contract? If not, why? Yes, it mostly aligned with my goals because I only used GenAI when I was really stuck. I did use it more than usual, especially for debugging.
 #
 # --- ARGUMENTS & EXPECTED RETURN VALUES PROVIDED --- #
 # --- SEE INSTRUCTIONS FOR FULL DETAILS ON METHOD IMPLEMENTATION --- #
@@ -336,7 +336,18 @@ def google_scholar_searcher(query):
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+
+    final = []
+    url = "https://scholar.google.com/scholar?q=" + query
+    page = requests.get(url)
+    text = page.text
+    parsed = BeautifulSoup(text, "html.parser")
+    for piece in parsed.find_all("h3"):
+        text_val = piece.get_text()
+        if text_val != "":
+            final.append(text_val.strip())
+    return final
+
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================

@@ -1,0 +1,21 @@
+1. 
+I don't think the current system does a good job holding short-term rentals in San
+Francisco accountable. It relies on hosts to enter their own policy numbers and on other people
+to report violations, which means Airbnb isn't really checking if listings are legal before they go
+up. Since enforcement mostly happens after complaints, illegal listings can stay active for a
+while without being dealt with. This goes against what the SWE Code of Ethics says about
+responsibility, since platforms should make sure their systems don't cause harm. A better way
+would be for Airbnb to verify policy numbers with the city before a listing goes live, instead of
+waiting for someone to complain after the fact.
+2.
+One important factor in whether web scraping is legal is what counts as "unauthorized
+access." The CFAA makes unauthorized access to computer systems illegal, but it's still unclear
+how that applies to scraping public websites. The hiQ vs. LinkedIn case is a good example of
+this, since the court had to decide if scraping publicly visible data actually broke the CFAA. The
+legality of web scraping will still be uncertain until there are clearer laws around this.
+3.
+One guideline is that scraping should only be done for a clear and reasonable purpose.
+For example, for research or holding platforms accountable, not just to take advantage of data.
+Another guideline is to be careful with how the data gets used, especially when it involves real
+people. Using data in a harmful or misleading way is still wrong even if it is public. Scraping
+should be done carefully and responsibly so it doesn't end up hurting anyone.
